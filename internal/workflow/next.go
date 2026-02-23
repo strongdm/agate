@@ -715,7 +715,6 @@ func buildNextSprintPrompt(goalContent, designContent string, completedSprints [
 
 	// Build skill-aware task format examples
 	coderSkill := findSkillByPattern(skillNames, "coder", "coder")
-	reviewerSkill := findSkillByPattern(skillNames, "reviewer", "_reviewer")
 
 	// Filter skill names for display: include project skills + _reviewer
 	var availableSkills []string
@@ -733,11 +732,11 @@ func buildNextSprintPrompt(goalContent, designContent string, completedSprints [
 	sb.WriteString(fmt.Sprintf("   %s\n\n", outputPath))
 	sb.WriteString("The sprint document should use nested task checkboxes with skill assignments:\n\n")
 	sb.WriteString(fmt.Sprintf(`- [ ] Task description
-  - [ ] %s: Implementation details
-  - [ ] %s: Review implementation
+  - [ ] %s: Implement functionality and write tests
   - [ ] _reviewer: Validate correctness
-`, coderSkill, reviewerSkill))
+`, coderSkill))
 	sb.WriteString("\n")
+	sb.WriteString("Keep sprints lean: 2-4 top-level tasks. Each task has ONE coder sub-task and ONE _reviewer sub-task. The coder writes implementation AND tests together.\n\n")
 	if len(availableSkills) > 0 {
 		sb.WriteString(fmt.Sprintf("Available skills: %s\n\n", strings.Join(availableSkills, ", ")))
 	}

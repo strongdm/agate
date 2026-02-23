@@ -535,7 +535,6 @@ func findSkillByPattern(skillNames []string, pattern string, fallback string) st
 func buildSprintsPromptWithContext(goal *project.Goal, design string, interviewContext string, outputPath string, skillNames []string) string {
 	// Build dynamic skill references from actual generated skills
 	coderSkill := findSkillByPattern(skillNames, "coder", "coder")
-	reviewerSkill := findSkillByPattern(skillNames, "reviewer", "_reviewer")
 
 	// Build the "Available skills" list: all project skills + _reviewer
 	allSkills := make([]string, len(skillNames))
@@ -555,14 +554,13 @@ func buildSprintsPromptWithContext(goal *project.Goal, design string, interviewC
 	// Build example tasks using real skill names
 	examples := fmt.Sprintf(`## Tasks
 
-- [ ] Set up project structure
-  - [ ] %s: Initialize project with dependencies
-  - [ ] _reviewer: Validate project structure is correct
+- [ ] Set up project and implement core functionality
+  - [ ] %s: Initialize project, implement the main logic, and write tests
+  - [ ] _reviewer: Validate implementation works correctly
 
-- [ ] Implement core feature
-  - [ ] %s: Write the main logic
-  - [ ] %s: Review code quality
-  - [ ] _reviewer: Validate feature works correctly`, coderSkill, coderSkill, reviewerSkill)
+- [ ] Add remaining features and polish
+  - [ ] %s: Implement remaining features with tests
+  - [ ] _reviewer: Validate all features work end-to-end`, coderSkill, coderSkill)
 
 	return fmt.Sprintf(`You are a project manager. Based on the project goal and design, create the first sprint plan.
 
@@ -585,11 +583,12 @@ Focus on getting a minimal working version. Use markdown formatting with NESTED 
 
 %s
 
-Important:
-- Top-level tasks describe what to accomplish
-- Sub-tasks (indented 2 spaces) specify WHICH SKILL does WHAT
-- Each sub-task format: "- [ ] skill-name: description"
-- End each task with a "_reviewer" sub-task for validation
+CRITICAL sprint sizing rules:
+- Keep sprints lean: aim for 2-4 top-level tasks. Each task should be a meaningful chunk of work, NOT a single function or file
+- Each task has exactly ONE coder sub-task and ONE _reviewer sub-task. Do NOT add separate code review, test-writing, or design sub-tasks
+- The coder writes implementation AND tests together in one sub-task
+- Sub-tasks format: "- [ ] skill-name: description"
+- End each task with exactly ONE "_reviewer" sub-task for validation
 - Available skills: %s
 
 IMPORTANT: Write the complete sprint document directly to this file path: %s

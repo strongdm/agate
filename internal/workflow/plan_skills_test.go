@@ -20,9 +20,9 @@ func TestBuildSprintsPromptSkillNames(t *testing.T) {
 	}{
 		{
 			name:      "go project",
-			skills:    []string{"go-coder", "go-reviewer", "test-writer"},
+			skills:    []string{"go-coder"},
 			wantCoder: "go-coder",
-			wantAvail: []string{"go-coder", "go-reviewer", "test-writer", "_reviewer"},
+			wantAvail: []string{"go-coder", "_reviewer"},
 			noCoder:   "rust-coder",
 		},
 		{
@@ -34,16 +34,16 @@ func TestBuildSprintsPromptSkillNames(t *testing.T) {
 		},
 		{
 			name:      "python project",
-			skills:    []string{"python-coder", "python-reviewer"},
+			skills:    []string{"python-coder"},
 			wantCoder: "python-coder",
-			wantAvail: []string{"python-coder", "python-reviewer", "_reviewer"},
+			wantAvail: []string{"python-coder", "_reviewer"},
 			noCoder:   "go-coder",
 		},
 		{
 			name:      "generic project",
-			skills:    []string{"coder", "reviewer"},
+			skills:    []string{"coder"},
 			wantCoder: "coder",
-			wantAvail: []string{"coder", "reviewer", "_reviewer"},
+			wantAvail: []string{"coder", "_reviewer"},
 			noCoder:   "go-coder",
 		},
 	}
@@ -67,6 +67,16 @@ func TestBuildSprintsPromptSkillNames(t *testing.T) {
 				if !strings.Contains(prompt, s) {
 					t.Errorf("prompt should contain skill %q in available list", s)
 				}
+			}
+
+			// Should contain lean sizing guidance
+			if !strings.Contains(prompt, "2-4") {
+				t.Error("prompt should contain task count guidance (2-4)")
+			}
+
+			// Should NOT contain language-specific reviewer in examples
+			if strings.Contains(prompt, "Review code quality") || strings.Contains(prompt, "Review implementation") {
+				t.Error("prompt should not contain language-reviewer sub-task in examples")
 			}
 		})
 	}
