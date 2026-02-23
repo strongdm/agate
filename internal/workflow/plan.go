@@ -333,7 +333,7 @@ func executeSprintPhase(projectDir string, proj *project.Project, opts PlanOptio
 	// Generate skills before sprint prompt so we can use real skill names
 	skills := project.GenerateSkills(goal.Language, goal.Type)
 	if err := project.WriteSkills(proj.SkillsDir(), skills); err != nil {
-		fmt.Printf("Warning: failed to write skills: %v\n", err)
+		fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to write skills: %v", err)))
 	}
 
 	var skillNames []string

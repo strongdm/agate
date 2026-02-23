@@ -157,7 +157,8 @@ func PrintInvocationStart(agent, skill, summary, logPath string) {
 		summary = summary[:47] + "..."
 	}
 	ts := strings.TrimSuffix(strings.ToLower(time.Now().Format("3:04PM")), "m")
-	fmt.Printf("[%s] [%s] %s: %q → %s\n", ts, agent, skill, summary, logPath)
+	fmt.Printf("%s %s %s: %q %s\n",
+		Dim("["+ts+"]"), Cyan("["+agent+"]"), skill, summary, Dim("→ "+logPath))
 }
 
 // GetLogsDir returns the logs directory for a sprint

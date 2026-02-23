@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/strongdm/agate/internal/logging"
 )
 
 var autoAgent string
@@ -114,7 +115,7 @@ func (r *AutoRunner) Run(agent string) int {
 		r.drainSuggestions(inputCh)
 
 		step++
-		fmt.Fprintf(r.Stdout, "[auto] Step %d\n", step)
+		fmt.Fprintf(r.Stdout, "%s Step %d\n", logging.BoldCyan("[auto]"), step)
 
 		args := []string{"next"}
 		if agent != "" {
@@ -123,13 +124,13 @@ func (r *AutoRunner) Run(agent string) int {
 
 		exitCode, err := r.Exec(args, r.Stdout, r.Stderr)
 		if err != nil {
-			fmt.Fprintf(r.Stderr, "[auto] Failed to execute: %v\n", err)
+			fmt.Fprintf(r.Stderr, "%s %s\n", logging.BoldCyan("[auto]"), logging.Yellow(fmt.Sprintf("Failed to execute: %v", err)))
 			return 2
 		}
 
 		switch exitCode {
 		case 0:
-			fmt.Fprintf(r.Stdout, "[auto] Done!\n")
+			fmt.Fprintf(r.Stdout, "%s %s\n", logging.BoldCyan("[auto]"), logging.Green("Done!"))
 			return 0
 		case 1:
 			// More work, loop
@@ -137,15 +138,15 @@ func (r *AutoRunner) Run(agent string) int {
 			continue
 		case 255:
 			// Human action needed — exit so user can act
-			fmt.Fprintf(r.Stdout, "[auto] Human action required, exiting.\n")
+			fmt.Fprintf(r.Stdout, "%s %s\n", logging.BoldCyan("[auto]"), logging.Yellow("Human action required, exiting."))
 			return 255
 		default:
 			consecutiveErrors++
 			if consecutiveErrors >= maxConsecutiveErrors {
-				fmt.Fprintf(r.Stderr, "[auto] Stopped after %d consecutive errors (last exit code %d)\n", consecutiveErrors, exitCode)
+				fmt.Fprintf(r.Stderr, "%s %s\n", logging.BoldCyan("[auto]"), logging.Yellow(fmt.Sprintf("Stopped after %d consecutive errors (last exit code %d)", consecutiveErrors, exitCode)))
 				return exitCode
 			}
-			fmt.Fprintf(r.Stderr, "[auto] Error (exit code %d), retrying (%d/%d)...\n", exitCode, consecutiveErrors, maxConsecutiveErrors)
+			fmt.Fprintf(r.Stderr, "%s %s\n", logging.BoldCyan("[auto]"), logging.Yellow(fmt.Sprintf("Error (exit code %d), retrying (%d/%d)...", exitCode, consecutiveErrors, maxConsecutiveErrors)))
 			continue
 		}
 	}
@@ -171,9 +172,9 @@ func (r *AutoRunner) drainSuggestions(ch <-chan string) {
 
 // sendSuggest runs 'agate suggest' with the given text.
 func (r *AutoRunner) sendSuggest(text string) {
-	fmt.Fprintf(r.Stdout, "[auto] Sending suggestion: %s\n", text)
+	fmt.Fprintf(r.Stdout, "%s Sending suggestion: %s\n", logging.BoldCyan("[auto]"), text)
 	_, err := r.Exec([]string{"suggest", text}, r.Stdout, r.Stderr)
 	if err != nil {
-		fmt.Fprintf(r.Stderr, "[auto] Warning: suggest failed: %v\n", err)
+		fmt.Fprintf(r.Stderr, "%s %s\n", logging.BoldCyan("[auto]"), logging.Yellow(fmt.Sprintf("Warning: suggest failed: %v", err)))
 	}
 }

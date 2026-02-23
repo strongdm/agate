@@ -5,6 +5,8 @@ import (
 	"io"
 	"sync"
 	"time"
+
+	"github.com/strongdm/agate/internal/logging"
 )
 
 // CountingWriter wraps a writer and tracks bytes written, with a live time+size ticker
@@ -97,7 +99,7 @@ func (c *CountingWriter) refresh() {
 	display := c.currentDisplay()
 	if display != c.lastDisplay {
 		c.lastDisplay = display
-		fmt.Printf("\r%-20s", display)
+		fmt.Printf("\r%-20s", logging.Dim(display))
 	}
 }
 
@@ -139,6 +141,6 @@ func (c *CountingWriter) PrintFinal() {
 		c.stopped = true
 		close(c.done)
 		display := c.currentDisplay()
-		fmt.Printf("\r%-20s\n", display)
+		fmt.Printf("\r%-20s\n", logging.Dim(display))
 	}
 }

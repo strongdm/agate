@@ -131,7 +131,7 @@ func NextWithOptions(projectDir string, opts NextOptions) (*Result, error) {
 			}
 		}
 		// Attempt replan
-		fmt.Println("⚠ Review failed too many times. Attempting sprint replan...")
+		fmt.Println(logging.Yellow("⚠ Review failed too many times. Attempting sprint replan..."))
 		result, err := attemptReplan(projectDir, proj, sprint, currentTask, logger, opts)
 		if err != nil {
 			return nil, &HumanNeededError{
@@ -209,14 +209,14 @@ func executeSubTask(projectDir string, proj *project.Project, sprint *SprintStat
 		if isRecovery {
 			return nil, fmt.Errorf("failed to execute sub-task (after recovery): %w", execResult.Error)
 		}
-		fmt.Println("⚠ Agent execution failed. Attempting recovery...")
+		fmt.Println(logging.Yellow("⚠ Agent execution failed. Attempting recovery..."))
 		recoveryErr := attemptRecovery(projectDir, proj, task, subTask,
 			selectedAgent.Name(), execResult, logger, opts)
 		if recoveryErr != nil {
-			fmt.Printf("  Recovery failed: %v\n", recoveryErr)
+			fmt.Printf("  %s\n", logging.Yellow(fmt.Sprintf("Recovery failed: %v", recoveryErr)))
 			return nil, fmt.Errorf("failed to execute sub-task: %w", execResult.Error)
 		}
-		fmt.Println("  Recovery complete. Retrying original task...")
+		fmt.Println("  " + logging.Yellow("Recovery complete. Retrying original task..."))
 		return executeSubTask(projectDir, proj, sprint, task, subTask, logger, opts, true)
 	}
 
@@ -224,7 +224,7 @@ func executeSubTask(projectDir string, proj *project.Project, sprint *SprintStat
 	if isImplementationSkill(subTask.Skill) {
 		filesWritten := parseAndWriteFiles(projectDir, execResult.Output)
 		if filesWritten > 0 {
-			fmt.Printf("  Wrote %d file(s)\n", filesWritten)
+			fmt.Printf("  %s\n", logging.Green(fmt.Sprintf("Wrote %d file(s)", filesWritten)))
 		}
 	}
 
@@ -232,18 +232,18 @@ func executeSubTask(projectDir string, proj *project.Project, sprint *SprintStat
 	isReviewer := subTask.Skill == "_reviewer" || strings.HasSuffix(subTask.Skill, "-reviewer")
 	if isReviewer && !isReviewApproved(execResult.Output) {
 		// Review failed - add ❌ to parent task and uncheck subtasks for retry
-		fmt.Println("⚠ Review failed. Adding failure marker and unchecking tasks for retry...")
+		fmt.Println(logging.Yellow("⚠ Review failed. Adding failure marker and unchecking tasks for retry..."))
 
 		// Add failure emoji to the parent task
 		if err := sprint.AddFailure(task.Index); err != nil {
-			fmt.Printf("Warning: failed to add failure marker: %v\n", err)
+			fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to add failure marker: %v", err)))
 		}
 
 		// Uncheck this subtask and all subsequent ones in this task
 		for i := subTask.Index; i < len(task.SubTasks); i++ {
 			if task.SubTasks[i].Checked {
 				if err := sprint.UncheckSubTask(task.Index, i); err != nil {
-					fmt.Printf("Warning: failed to uncheck sub-task %d: %v\n", i, err)
+					fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to uncheck sub-task %d: %v", i, err)))
 				}
 			}
 		}
@@ -266,9 +266,9 @@ func executeSubTask(projectDir string, proj *project.Project, sprint *SprintStat
 	// Check if all sub-tasks for this task are complete
 	if sprint.AllSubTasksComplete(task.Index) {
 		if err := sprint.CheckTask(task.Index); err != nil {
-			fmt.Printf("Warning: failed to mark task complete: %v\n", err)
+			fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to mark task complete: %v", err)))
 		}
-		fmt.Printf("✓ Task complete: %s\n", task.Text)
+		fmt.Printf("%s\n", logging.Green(fmt.Sprintf("✓ Task complete: %s", task.Text)))
 	}
 
 	// Re-parse for final state
@@ -387,10 +387,10 @@ func autoCheckOrphanedTasks(sprint *SprintState) int {
 		// Task with no subtasks, or all subtasks already done
 		if len(task.SubTasks) == 0 || sprint.AllSubTasksComplete(task.Index) {
 			if err := sprint.CheckTask(task.Index); err != nil {
-				fmt.Printf("Warning: failed to auto-check task %d: %v\n", i, err)
+				fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to auto-check task %d: %v", i, err)))
 				continue
 			}
-			fmt.Printf("✓ Auto-checked orphaned task: %s\n", task.Text)
+			fmt.Printf("%s\n", logging.Green(fmt.Sprintf("✓ Auto-checked orphaned task: %s", task.Text)))
 			fixed++
 		}
 	}
@@ -534,10 +534,10 @@ func attemptReplan(projectDir string, proj *project.Project, sprint *SprintState
 
 	// Clear failure markers and add replan marker
 	if err := sprint.ClearFailures(replanTask.Index); err != nil {
-		fmt.Printf("Warning: failed to clear failure markers: %v\n", err)
+		fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to clear failure markers: %v", err)))
 	}
 	if err := sprint.AddReplanMarker(replanTask.Index); err != nil {
-		fmt.Printf("Warning: failed to add replan marker: %v\n", err)
+		fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to add replan marker: %v", err)))
 	}
 
 	fmt.Println("  Replan complete. Sprint file updated. Run 'agate next' to retry.")
@@ -859,7 +859,7 @@ func parseAndWriteFiles(projectDir string, content string) int {
 			content := strings.Join(currentContent, "\n")
 			if err := os.WriteFile(path, []byte(content), 0644); err == nil {
 				filesWritten++
-				fmt.Printf("  Wrote: %s\n", currentFile)
+				fmt.Printf("  %s\n", logging.Green(fmt.Sprintf("Wrote: %s", currentFile)))
 			}
 		}
 		currentFile = ""

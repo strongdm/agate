@@ -204,7 +204,7 @@ func ExecuteWithLogging(ctx context.Context, agent Agent, prompt string, workDir
 		)
 		if err != nil {
 			// Log error but continue execution
-			fmt.Printf("Warning: failed to start log: %v\n", err)
+			fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to start log: %v", err)))
 		} else {
 			logFile.SetPrompt(prompt)
 			result.LogPath = logFile.Path
@@ -249,7 +249,7 @@ func ExecuteWithLogging(ctx context.Context, agent Agent, prompt string, workDir
 			logFile.SetStatus("success")
 		}
 		if closeErr := logFile.Close(); closeErr != nil {
-			fmt.Printf("Warning: failed to close log: %v\n", closeErr)
+			fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to close log: %v", closeErr)))
 		}
 	}
 
