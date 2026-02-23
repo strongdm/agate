@@ -37,7 +37,7 @@ func (a *CodexAgent) Execute(ctx context.Context, prompt string, workDir string)
 	}
 
 	// Use codex CLI in full-auto mode
-	cmd := exec.CommandContext(ctx, a.cliPath, "--full-auto", "exec", prompt)
+	cmd := exec.CommandContext(ctx, a.cliPath, "--full-auto-net", "exec", prompt)
 	cmd.Dir = workDir
 
 	var stdout, stderr bytes.Buffer
@@ -63,7 +63,7 @@ func (a *CodexAgent) ExecuteWithStream(ctx context.Context, prompt string, workD
 	}
 
 	// Use codex CLI in full-auto mode
-	cmd := exec.CommandContext(ctx, a.cliPath, "--full-auto", "exec", prompt)
+	cmd := exec.CommandContext(ctx, a.cliPath, "--full-auto-net", "exec", prompt)
 	cmd.Dir = workDir
 
 	var stdout bytes.Buffer
