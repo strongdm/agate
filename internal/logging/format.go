@@ -99,8 +99,7 @@ func FormatInterview(questions []InterviewQuestion) string {
 	var sb strings.Builder
 
 	sb.WriteString("# Project Interview\n\n")
-	sb.WriteString("Answer each question, then check the completion box at the bottom.\n\n")
-	sb.WriteString("## Questions\n\n")
+	sb.WriteString("Check boxes and/or fill in blockquotes, then check the completion box at the bottom.\n\n")
 
 	for i, q := range questions {
 		sb.WriteString(fmt.Sprintf("### Q%d: %s\n\n", i+1, q.Title))
@@ -110,12 +109,14 @@ func FormatInterview(questions []InterviewQuestion) string {
 			for _, opt := range q.Options {
 				sb.WriteString(fmt.Sprintf("- [ ] %s\n", opt))
 			}
-			sb.WriteString("\n")
+			sb.WriteString("- [ ] No preference\n")
+			sb.WriteString("\n> Notes:\n")
+		} else {
+			sb.WriteString("> Answer:\n")
 		}
-		sb.WriteString("**Answer**: \n\n")
+		sb.WriteString("\n---\n\n")
 	}
 
-	sb.WriteString("---\n")
 	sb.WriteString("- [ ] All questions answered (check when complete)\n")
 
 	return sb.String()
@@ -145,42 +146,72 @@ func ParseInterviewStatus(content string) bool {
 	return false
 }
 
-// ParseInterviewAnswers extracts answers from interview file
+// ParseInterviewAnswers extracts answers from interview file.
+// Supports the new checkbox/blockquote format and the legacy **Answer**: format.
 func ParseInterviewAnswers(content string) map[string]string {
 	answers := make(map[string]string)
 
 	lines := strings.Split(content, "\n")
 	var currentQuestion string
-	inAnswer := false
+	var checked []string
+
+	flushQuestion := func() {
+		if currentQuestion != "" && len(checked) > 0 {
+			if existing, ok := answers[currentQuestion]; ok && existing != "" {
+				answers[currentQuestion] = strings.Join(checked, ", ") + "\n" + existing
+			} else {
+				answers[currentQuestion] = strings.Join(checked, ", ")
+			}
+		}
+		checked = nil
+	}
 
 	for _, line := range lines {
 		if strings.HasPrefix(line, "### Q") {
-			// Extract question title
+			flushQuestion()
 			parts := strings.SplitN(line, ": ", 2)
 			if len(parts) == 2 {
 				currentQuestion = parts[1]
 			}
-			inAnswer = false
-		} else if strings.HasPrefix(line, "**Answer**:") {
-			inAnswer = true
-			// Check for inline answer
-			answer := strings.TrimPrefix(line, "**Answer**:")
-			answer = strings.TrimSpace(answer)
-			if answer != "" {
-				answers[currentQuestion] = answer
-				inAnswer = false
+		} else if currentQuestion != "" {
+			trimmed := strings.TrimSpace(line)
+
+			// Checked checkbox
+			if strings.HasPrefix(trimmed, "- [x] ") || strings.HasPrefix(trimmed, "- [X] ") {
+				val := trimmed[6:]
+				if val != "No preference" {
+					checked = append(checked, val)
+				}
 			}
-		} else if inAnswer && strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "---") && !strings.HasPrefix(line, "Status:") {
-			// Continuation of answer
-			if existing, ok := answers[currentQuestion]; ok {
-				answers[currentQuestion] = existing + "\n" + strings.TrimSpace(line)
-			} else {
-				answers[currentQuestion] = strings.TrimSpace(line)
+
+			// Blockquote answer/notes
+			if strings.HasPrefix(trimmed, "> Notes:") || strings.HasPrefix(trimmed, "> Answer:") {
+				var prefix string
+				if strings.HasPrefix(trimmed, "> Notes:") {
+					prefix = "> Notes:"
+				} else {
+					prefix = "> Answer:"
+				}
+				text := strings.TrimSpace(strings.TrimPrefix(trimmed, prefix))
+				if text != "" {
+					if existing, ok := answers[currentQuestion]; ok && existing != "" {
+						answers[currentQuestion] = existing + "\n" + text
+					} else {
+						answers[currentQuestion] = text
+					}
+				}
 			}
-		} else if strings.HasPrefix(line, "---") || strings.HasPrefix(line, "Status:") {
-			inAnswer = false
+
+			// Legacy **Answer**: format
+			if strings.HasPrefix(trimmed, "**Answer**:") {
+				text := strings.TrimSpace(strings.TrimPrefix(trimmed, "**Answer**:"))
+				if text != "" {
+					answers[currentQuestion] = text
+				}
+			}
 		}
 	}
 
+	flushQuestion()
 	return answers
 }
