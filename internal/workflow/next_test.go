@@ -245,7 +245,7 @@ func TestBuildNextSprintPrompt_IncludesAllContext(t *testing.T) {
 	sprints := []completedSprint{
 		{Num: 1, Content: "# Sprint 1\n\n- [x] Set up project"},
 	}
-	skills := []string{"go-coder", "go-reviewer", "_reviewer"}
+	skills := []string{"go-coder", "_reviewer"}
 	outputPath := ".ai/sprints/02-next.md"
 
 	prompt := buildNextSprintPrompt(goal, design, sprints, skills, outputPath)

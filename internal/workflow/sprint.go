@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/strongdm/agate/internal/logging"
 )
 
 // Task represents a top-level task with sub-tasks
@@ -515,7 +517,7 @@ func MergeFailureCounts(oldSprintPath, newSprintPath string) error {
 			// Add the failure emojis
 			for j := 0; j < count; j++ {
 				if err := newSprint.AddFailure(i); err != nil {
-					fmt.Printf("Warning: failed to add failure marker to task %d: %v\n", i, err)
+					fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to add failure marker to task %d: %v", i, err)))
 					break
 				}
 			}
@@ -551,43 +553,53 @@ func (s *SprintState) GetOverallProgress() (completed, total int) {
 // Returns a string like "[xo. ... .....] 45% Sprint 1 - Task name"
 func (s *SprintState) RenderProgressBar(sprintNum int, runningTaskIdx, runningSubIdx int) string {
 	var segments []string
-	var singleChars string
+	var singleChars []string
 
 	flushSingles := func() {
-		if singleChars != "" {
-			segments = append(segments, singleChars)
-			singleChars = ""
+		if len(singleChars) > 0 {
+			segments = append(segments, strings.Join(singleChars, ""))
+			singleChars = nil
+		}
+	}
+
+	colorChar := func(ch byte, taskIdx, subIdx int) string {
+		switch ch {
+		case 'x':
+			return logging.Green(string(ch))
+		case 'o':
+			return logging.Yellow(string(ch))
+		default:
+			return logging.Dim(string(ch))
 		}
 	}
 
 	for _, task := range s.Tasks {
 		if len(task.SubTasks) == 0 {
-			// Accumulate no-subtask tasks into a single grouped segment
 			if task.Checked {
-				singleChars += "x"
+				singleChars = append(singleChars, logging.Green("x"))
 			} else {
-				singleChars += "."
+				singleChars = append(singleChars, logging.Dim("."))
 			}
 			continue
 		}
 
 		flushSingles()
 
-		var chars []byte
+		var chars []string
 		for _, sub := range task.SubTasks {
 			if sub.Checked {
-				chars = append(chars, 'x')
+				chars = append(chars, colorChar('x', task.Index, sub.Index))
 			} else if task.Index == runningTaskIdx && sub.Index == runningSubIdx {
-				chars = append(chars, 'o')
+				chars = append(chars, colorChar('o', task.Index, sub.Index))
 			} else {
-				chars = append(chars, '.')
+				chars = append(chars, colorChar('.', task.Index, sub.Index))
 			}
 		}
-		segments = append(segments, string(chars))
+		segments = append(segments, strings.Join(chars, ""))
 	}
 	flushSingles()
 
-	bar := "[" + strings.Join(segments, " ") + "]"
+	bar := logging.Bold("[") + strings.Join(segments, " ") + logging.Bold("]")
 
 	// Compute percentage from all subtask-level items
 	completed, total := s.GetOverallProgress()
@@ -599,8 +611,10 @@ func (s *SprintState) RenderProgressBar(sprintNum int, runningTaskIdx, runningSu
 	// Add context: percentage, sprint number, and current task name
 	currentTask := s.GetCurrentTask()
 	if currentTask != nil {
-		return fmt.Sprintf("%s %d%% Sprint %d - %s", bar, pct, sprintNum, TruncateText(currentTask.Text, 40))
+		return fmt.Sprintf("%s %s %s", bar, logging.Bold(fmt.Sprintf("%d%%", pct)),
+			logging.Cyan(fmt.Sprintf("Sprint %d - %s", sprintNum, TruncateText(currentTask.Text, 40))))
 	}
 
-	return fmt.Sprintf("%s %d%% Sprint %d - Complete", bar, pct, sprintNum)
+	return fmt.Sprintf("%s %s %s", bar, logging.Bold(fmt.Sprintf("%d%%", pct)),
+		logging.Cyan(fmt.Sprintf("Sprint %d - Complete", sprintNum)))
 }

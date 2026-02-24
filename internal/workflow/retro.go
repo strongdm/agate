@@ -136,21 +136,21 @@ Be specific and actionable. Focus on improvements that would prevent similar iss
 	// Apply skill updates
 	for skillName, update := range skillUpdates {
 		if err := applySkillUpdate(proj.SkillsDir(), skillName, update); err != nil {
-			fmt.Printf("Warning: failed to update skill %s: %v\n", skillName, err)
+			fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to update skill %s: %v", skillName, err)))
 		} else {
-			fmt.Printf("Updated skill: %s\n", skillName)
+			fmt.Printf("%s\n", logging.Green(fmt.Sprintf("Updated skill: %s", skillName)))
 		}
 	}
 
 	// Format and save the retrospective
 	retroContent := logging.FormatRetro(sprintNumber, result, skillUpdates)
 	if err := logging.EnsureRetrosDir(projectDir); err != nil {
-		fmt.Printf("Warning: failed to create retros directory: %v\n", err)
+		fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to create retros directory: %v", err)))
 	}
 	if err := os.WriteFile(retroPath, []byte(retroContent), 0644); err != nil {
-		fmt.Printf("Warning: failed to write retrospective: %v\n", err)
+		fmt.Printf("%s\n", logging.Yellow(fmt.Sprintf("Warning: failed to write retrospective: %v", err)))
 	} else {
-		fmt.Printf("Retrospective saved: %s\n", retroPath)
+		fmt.Printf("%s\n", logging.Green(fmt.Sprintf("Retrospective saved: %s", retroPath)))
 	}
 
 	return &Result{

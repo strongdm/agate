@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/strongdm/agate/internal/logging"
 )
 
 // StatusWithResult generates the status output and returns the StatusResult.
@@ -35,9 +37,9 @@ func formatStatus(projectDir string, result StatusResult) (string, error) {
 
 	// Goal status
 	if result.HasGoal {
-		sb.WriteString("GOAL     -> GOAL.md\n")
+		sb.WriteString(fmt.Sprintf("%s     %s\n", logging.Bold("GOAL"), logging.Dim("-> GOAL.md")))
 	} else {
-		sb.WriteString("GOAL     (missing) Create GOAL.md to get started\n")
+		sb.WriteString(fmt.Sprintf("%s     %s Create GOAL.md to get started\n", logging.Bold("GOAL"), logging.Yellow("(missing)")))
 		sb.WriteString("\n")
 		sb.WriteString(strings.Repeat("-", 40))
 		sb.WriteString("\n")
@@ -47,36 +49,36 @@ func formatStatus(projectDir string, result StatusResult) (string, error) {
 
 	// Show planning phase status
 	if result.Phase != PhaseExecution {
-		sb.WriteString(fmt.Sprintf("PHASE    %s\n", result.Phase))
+		sb.WriteString(fmt.Sprintf("%s    %s\n", logging.Bold("PHASE"), result.Phase))
 	}
 
 	// Interview status
 	if result.InterviewExists {
 		if result.InterviewComplete {
-			sb.WriteString("INTERVIEW + complete\n")
+			sb.WriteString(fmt.Sprintf("%s %s\n", logging.Bold("INTERVIEW"), logging.Green("+ complete")))
 		} else {
-			sb.WriteString("INTERVIEW + awaiting answers\n")
-			sb.WriteString("         -> .ai/interview.md\n")
+			sb.WriteString(fmt.Sprintf("%s %s\n", logging.Bold("INTERVIEW"), logging.Yellow("+ awaiting answers")))
+			sb.WriteString(fmt.Sprintf("         %s\n", logging.Dim("-> .ai/interview.md")))
 		}
 	} else if result.Phase == PhaseInterview {
-		sb.WriteString("INTERVIEW (pending)\n")
+		sb.WriteString(fmt.Sprintf("%s %s\n", logging.Bold("INTERVIEW"), logging.Yellow("(pending)")))
 	}
 
 	// Design status
 	if result.HasDesignOverview {
-		sb.WriteString("DESIGN   + complete\n")
+		sb.WriteString(fmt.Sprintf("%s   %s\n", logging.Bold("DESIGN"), logging.Green("+ complete")))
 		for _, f := range result.DesignFiles {
-			sb.WriteString(fmt.Sprintf("         -> .ai/design/%s\n", f))
+			sb.WriteString(fmt.Sprintf("         %s\n", logging.Dim(fmt.Sprintf("-> .ai/design/%s", f))))
 		}
 	} else if result.Phase == PhaseDesign || result.Phase == PhaseDecisions || result.Phase == PhaseSprint || result.Phase == PhaseExecution {
-		sb.WriteString("DESIGN   (pending)\n")
+		sb.WriteString(fmt.Sprintf("%s   %s\n", logging.Bold("DESIGN"), logging.Yellow("(pending)")))
 	}
 
 	// Skills status
 	if len(result.Skills) > 0 {
-		sb.WriteString(fmt.Sprintf("SKILLS   + %d generated\n", len(result.Skills)))
+		sb.WriteString(fmt.Sprintf("%s   %s\n", logging.Bold("SKILLS"), logging.Green(fmt.Sprintf("+ %d generated", len(result.Skills)))))
 		for _, s := range result.Skills {
-			sb.WriteString(fmt.Sprintf("         -> .ai/skills/%s\n", s))
+			sb.WriteString(fmt.Sprintf("         %s\n", logging.Dim(fmt.Sprintf("-> .ai/skills/%s", s))))
 		}
 	}
 
@@ -84,7 +86,7 @@ func formatStatus(projectDir string, result StatusResult) (string, error) {
 	if result.Sprint != nil {
 		// Show visual progress bar
 		progressBar := result.Sprint.RenderProgressBar(result.CurrentSprintNum, -1, -1)
-		sb.WriteString(fmt.Sprintf("SPRINT   %s\n", progressBar))
+		sb.WriteString(fmt.Sprintf("%s   %s\n", logging.Bold("SPRINT"), progressBar))
 
 		// Show next sub-task if not complete
 		if !result.Sprint.IsComplete() {
@@ -94,7 +96,7 @@ func formatStatus(projectDir string, result StatusResult) (string, error) {
 			}
 		}
 	} else if result.Phase == PhaseSprint || result.Phase == PhaseExecution {
-		sb.WriteString("SPRINT   (pending)\n")
+		sb.WriteString(fmt.Sprintf("%s   %s\n", logging.Bold("SPRINT"), logging.Yellow("(pending)")))
 	}
 
 	sb.WriteString("\n")
